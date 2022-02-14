@@ -1,68 +1,19 @@
-#!/bin/bash
+#!/bin/sh
 
-function die() {
-echo ERROR: $*
-exit 1
-}
+apk add \
+    git \
+    alpine-sdk \
+    cmake \
+    openssl-dev \
+    libssl1.1
 
-function download() {
-mkdir -p libs
-wget -O libs/openssl.zip -c https://codeload.github.com/openssl/openssl/zip/OpenSSL_1_1_1-stable || die "download openssl"
-wget -O libs/gost-engine.zip -c https://codeload.github.com/gost-engine/engine/zip/1b374532c2d494710c39371e83c197d08c65e8bc || die "download gost-engine"
-wget -O libs/cmake-3.14.0.tar.gz -c https://github.com/Kitware/CMake/releases/download/v3.14.0/cmake-3.14.0.tar.gz || die "download cmake"
-}
-
-function prereq() {
-sudo apt-get install make pkg-config autoconf build-essential
-}
-
-function unpack() {
-cd libs
-unzip openssl.zip          || die "unpack openssl"
-unzip gost-engine.zip      || die "unpack gost-engine"
-ln -s engine-1b374532c2d494710c39371e83c197d08c65e8bc engine || die "ln gost-engine"
-tar xf cmake-3.14.0.tar.gz || die "unpack cmake"
-cd ..
-}
-
-function mk_cmake() {
-cd libs/cmake-3.14.0
-./configure       || die "configure cmake"
-make              || die "make cmake"
-sudo make install || die "install cmake"
-cd ../..
-}
-
-function mk_openssl() {
-cd libs/openssl-OpenSSL_1_1_1-stable
-./config          || die "config openssl"
-make              || die "make openssl"
-sudo make install || die "install openssl"
-sudo ln -s /usr/local/lib/libssl.so.1.1 /lib/x86_64-linux-gnu/libssl.so.1.1       || die "ln libssl"
-sudo ln -s /usr/local/lib/libcrypto.so.1.1 /lib/x86_64-linux-gnu/libcrypto.so.1.1 || die "ln libcrypto"
-cd ../..
-}
-
-function mk_gost() {
-export OPENSSL_ROOT_DIR=$(pwd)/libs/openssl-OpenSSL_1_1_1-stable
-echo OPENSSL_ROOT_DIR=$OPENSSL_ROOT_DIR
-cd libs/engine
+cd /opt
+git clone --branch=openssl_1_1_1 https://github.com/gost-engine/engine.git gost-engine
+cd gost-engine
 mkdir build
 cd build
-cmake ..                            || die "cmake gost-engine"
-cmake -DCMAKE_BUILD_TYPE=Release .. || die "make gost-engine"
-cmake --build . --config Release    || die "build gost-engine"
-sudo make install                   || die "install gost-engine"
-cd ../../..
-sudo cp openssl-config.txt /usr/local/ssl/openssl.cnf || die "add gost-engine to openssl"
-}
-
-prereq
-download
-unpack
-mk_cmake
-mk_openssl
-mk_gost
-
-openssl version
-openssl ciphers | grep GOST2012
+cmake -DCMAKE_BUILD_TYPE=Release -DOPENSSL_ROOT_DIR=/usr/ssl -DOPENSSL_LIBRARIES=/usr/ssl/lib -DOPENSSL_ENGINES_DIR=/usr/ssl/lib/engines-3 ..
+cmake --build . --config Release
+cmake --build . --target install --config Release
+sed -i '1s;^;openssl_conf = openssl_def\n;' /etc/ssl1.1/openssl.cnf
+cat openssl.conf >>/etc/ssl1.1/openssl.cnf

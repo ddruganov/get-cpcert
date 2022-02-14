@@ -1,7 +1,14 @@
 #!/bin/sh
 
-cp libs/engine/build/bin/gost.so libgost.so
-gcc -o get-cpcert -Ilibs/engine get-cpcert.c \
-  -Llibs/openssl-OpenSSL_1_1_1-stable -lssl -lcrypto \
-  -Llibs/engine/build -lgost_core -L. -lgost \
-  -lpthread -ldl -Xlinker '-rpath=.'
+gcc -o cert-convert \
+  -Igost-engine cert-convert.c \
+  -Llibs/openssl-OpenSSL_1_1_1-stable \
+  -lssl \
+  -lcrypto \
+  -Lgost-engine/build \
+  -lgost_core \
+  -L. \
+  -lgost \
+  -lpthread \
+  -ldl \
+  -Xlinker '-rpath=.'
