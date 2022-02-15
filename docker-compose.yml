@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  alpine:
+    container_name: get-cpcert.alpine
+    build:
+      context: ./
+      dockerfile: ./docker/Dockerfile
+    volumes:
+      - ./:/app
+    restart: unless-stopped
