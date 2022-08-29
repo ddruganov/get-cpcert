@@ -17,9 +17,10 @@ WORKDIR /opt/gost-engine/build
 RUN cmake -DCMAKE_BUILD_TYPE=Release -DOPENSSL_ROOT_DIR=/usr/ssl -DOPENSSL_LIBRARIES=/usr/ssl/lib -DOPENSSL_ENGINES_DIR=/usr/ssl/lib/engines-3 ..
 RUN cmake --build . --config Release
 RUN cmake --build . --target install --config Release
-RUN sed -i '1s;^;openssl_conf = openssl_def\n;' /etc/ssl1.1/openssl.cnf
-COPY docker/openssl.conf /opt/openssl.conf
-RUN cat /opt/openssl.conf >> /etc/ssl1.1/openssl.cnf
+COPY docker/openssl.conf /opt/openssl_gost.conf
+RUN OPENSSL_DIRECTORY="$([[ -d /etc/ssl1.1 ]] && echo '/etc/ssl1.1' || echo '/etc/ssl')" && \
+    sed -i '1s;^;openssl_conf = openssl_def\n;' "$OPENSSL_DIRECTORY/openssl.cnf" && \
+    cat /opt/openssl_gost.conf >> "$OPENSSL_DIRECTORY/openssl.cnf"
 
 WORKDIR /app
 
